@@ -1,0 +1,30 @@
+FROM php:8.3-fpm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/laravel
+
+# NOTE: vendor/ built here is only a fallback for the first `docker compose up`.
+# docker-compose.yml mounts a named volume over /var/www/laravel/vendor, which
+# takes over once the container starts (same pattern as the node_modules volumes).
+# Copy source code and install dependencies at image build time (one-time)
+COPY ../laravel_service /var/www/laravel
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev \
+    && chown -R www-data:www-data /var/www/laravel \
+    && chmod -R 755 /var/www/laravel/storage /var/www/laravel/bootstrap/cache
+
+EXPOSE 9000
+CMD ["php-fpm"]
