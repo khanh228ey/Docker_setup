@@ -1,17 +1,3 @@
-Tui có cấu truc folder như này 
-Thì tui mới nhập môn docker thì tui đang muốn build 1 CONTAINER docker để chạy môi trường src để chạy laravel ,nestjs , reactjs
-3 src này sẽ nằm trong thư mục này 
-theo tui biet thì tui cần setup php >8.3 GIÚP TUI , node , nginx để chạy mà ko cần phải start từng src 
-hiện tại db tui sẽ setup sau tui cần src 3 src chạy phổ thông trước đã 
-thì tui có KHAI BÁO 3 DOMAIN VÀO HOST 
-laravel.local.com hoặc ip local port 8080
-nest.local.com hoặc ip local port 3000
-react.local.com hoặc ip local port 3001 nếu ko  xài khai báo host
-
-hiện tại tui chưa cần tối ưu đâu tui cần chạy được đã nên hãy làm cơ bản nhất có thể và theo cấu trúc sau 
-FOLDER DOCKER NÀY TUI CÓ TẠO CÙNG CẤP VS 3 FOLDER SRC TRÊN 
-D:\Src_code\improvisation   laravel_serivce , nest_service, react_service
-
 ## Config domain qua `.env`
 
 Bạn có thể khai báo **nhiều domain** cho từng app bằng cách cách nhau bởi dấu cách:
@@ -44,3 +30,16 @@ Service `clickhouse` dùng image chính thức `clickhouse/clickhouse-server:24.
 - Data được lưu ở named volume `clickhouse_data` nên restart container không mất dữ liệu; `docker compose down -v` mới xoá.
 
 Khởi động riêng: `docker compose up -d clickhouse`.
+
+## Kafka (local, KRaft mode)
+
+Dùng image chính thức `apache/kafka:3.8.0`, chạy KRaft (không cần Zookeeper, chỉ 1 container `broker+controller`). Kèm `kafka-ui` (provectuslabs) để xem topic/message qua browser.
+
+- Web UI: http://localhost:8081
+- Từ các container khác trong `app_network` (nestjs, laravel, django...): connect qua `kafka:9092`.
+- Từ máy Windows (kafkajs chạy ngoài container, offset explorer...): connect qua `localhost:9094`.
+  - **Lưu ý:** không dùng `localhost:9092` từ Windows — Kafka trả `advertised.listeners` là `kafka:9092` cho listener đó, hostname `kafka` không resolve được ngoài docker network nên client sẽ connect fail sau bước lấy metadata. Đây là lý do có 2 listener riêng (`PLAINTEXT` cho nội bộ, `PLAINTEXT_HOST` cho từ host).
+- `KAFKA_AUTO_CREATE_TOPICS_ENABLE=true` nên code cứ produce vào topic mới là Kafka tự tạo, không cần tạo tay khi dev.
+- Data lưu ở named volume `kafka_data`, restart container không mất.
+
+Khởi động riêng: `docker compose up -d kafka kafka-ui`.

@@ -116,6 +116,63 @@ services:
     mem_limit: 1g
     cpus: 1.5
 
+  # ==========================================
+  # KAFKA (KRaft mode, single node)
+  # ==========================================
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: kafka
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_LOG_DIRS=/var/lib/kafka/data
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_HEAP_OPTS=-Xmx512m -Xms512m
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "9094:9094" # host access (Windows tools, kafkajs ngoài container)
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - app_network
+    mem_limit: 1.5g
+    cpus: 1.5
+
+  # ==========================================
+  # KAFKA UI
+  # ==========================================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - DYNAMIC_CONFIG_ENABLED=true
+    ports:
+      - "8081:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - app_network
+    mem_limit: 512m
+    cpus: 0.5
+
 networks:
   app_network:
     driver: bridge
@@ -125,3 +182,4 @@ volumes:
   react_node_modules:
   laravel_vendor:
   clickhouse_data:
+  kafka_data:
