@@ -20,13 +20,14 @@ Nếu vẫn thấy nặng: đòn bẩy lớn nhất tiếp theo là chuyển pro
 
 ## ClickHouse (local)
 
-Service `clickhouse` dùng image chính thức `clickhouse/clickhouse-server:24.8`, không bật auth (user `default`, không password) — chỉ dùng cho local dev, đừng expose ra ngoài mạng LAN/internet.
+Service `clickhouse` dùng image chính thức `clickhouse/clickhouse-server:24.8`. User `default`, password `123456` (đặt qua `CLICKHOUSE_PASSWORD`) — chỉ dùng cho local dev, đừng expose ra ngoài mạng LAN/internet, đổi password khác nếu deploy thật.
 
 - Database mặc định: `codechill` (tự tạo lúc container khởi tạo lần đầu qua `CLICKHOUSE_DB`).
-- Từ máy Windows (DBeaver, `clickhouse-client`, curl...):
-  - HTTP: `http://localhost:8123` (thử nhanh: `curl http://localhost:8123/ping` phải trả về `Ok.`)
+- Từ máy Windows (DataGrip/DBeaver JDBC, curl...):
+  - HTTP: `http://localhost:8123` — user `default` / password `123456`. Test nhanh: `curl -u default:123456 http://localhost:8123/ping` phải trả về `Ok.`
   - Native TCP: `localhost:9001` (map từ container port `9000`; đổi sang 9001 vì host port 9000 đã bị `laravel` dùng cho php-fpm)
-- Từ các container khác trong `app_network` (nestjs, laravel, django...) dùng hostname service: `clickhouse:8123` (HTTP) hoặc `clickhouse:9000` (native, port nội bộ container vẫn là 9000 như bình thường).
+- Từ các container khác trong `app_network` (nestjs, laravel, django...) dùng hostname service: `clickhouse:8123` (HTTP) hoặc `clickhouse:9000` (native, port nội bộ container vẫn là 9000 như bình thường), cùng user/password ở trên.
+- **Quan trọng:** vì container đã từng khởi tạo lúc chưa có password, cần xoá volume cũ để ClickHouse tạo lại user `default` với password mới (env `CLICKHOUSE_PASSWORD` chỉ có tác dụng lúc data dir rỗng — init lần đầu).
 - Data được lưu ở named volume `clickhouse_data` nên restart container không mất dữ liệu; `docker compose down -v` mới xoá.
 
 Khởi động riêng: `docker compose up -d clickhouse`.

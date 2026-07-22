@@ -103,6 +103,8 @@ services:
       - clickhouse_data:/var/lib/clickhouse
     environment:
       - CLICKHOUSE_DB=codechill
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=123456
     ports:
       - "8123:8123" # HTTP interface
       - "9001:9000" # Native TCP protocol (host 9001 -> laravel already uses host 9000)
